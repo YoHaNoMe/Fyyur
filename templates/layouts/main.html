@@ -100,7 +100,7 @@
         {% endif %}
       {% endwith %}
 
-      {% if form.errors %}
+      {% if errors %}
         {% for field, errors in form.errors.items()%}
           <div class="alert alert-danger">
             <a class="close" data-dismiss="alert">&times;</a>

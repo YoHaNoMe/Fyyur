@@ -1,18 +1,24 @@
 from datetime import datetime
 from flask_wtf import FlaskForm
-from wtforms import StringField, SelectField, SelectMultipleField, DateTimeField
-from wtforms.validators import DataRequired, AnyOf, URL, Length
+from wtforms import StringField, SelectField, SelectMultipleField, DateTimeField, IntegerField
+from wtforms.validators import InputRequired, DataRequired, AnyOf, URL, Length, NumberRange
 
 class ShowForm(FlaskForm):
-    artist_id = StringField(
-        'artist_id'
+    venue_id = IntegerField(
+        'venue_id', validators=[
+            InputRequired(message='This field is required'),
+            NumberRange(min=1, message='ID cannot be zero or negative'),
+            ]
     )
-    venue_id = StringField(
-        'venue_id'
+    artist_id = IntegerField(
+        'venue_id', validators=[
+            InputRequired(message='This field is required'),
+            NumberRange(min=1, message='ID cannot be zero or negative'),
+            ]
     )
     start_time = DateTimeField(
         'start_time',
-        validators=[DataRequired()],
+        validators=[DataRequired('This field is required')],
         default= datetime.today()
     )
 
@@ -224,4 +230,4 @@ class ArtistForm(FlaskForm):
         'facebook_link', validators=[URL()]
     )
 
-# TODO IMPLEMENT NEW ARTIST FORM AND NEW SHOW FORM
+# TODO IMPLEMENT NEW ARTIST FORM AND NEW SHOW FORM (completed)

@@ -131,6 +131,11 @@ def venues():
       "num_upcoming_shows": 0,
     }]
   }]
+  venues = Venue.query.all()
+  # data2 = [{
+  #   "city": venue
+  # }]
+  print(venues[0].name)
   return render_template('pages/venues.html', areas=data);
 
 @app.route('/venues/search', methods=['POST'])
@@ -278,7 +283,7 @@ def create_venue_submission():
       if not error:
           print('Helllooooooooo')
           flash('Venue "' + form.name.data + '" was successfully listed!')
-          return render_template('pages/home.html')
+          return render_template('pages/home.html', errors=form.errors)
       else:
           print('adjasjdjajdjas')
           flash('Error: Venue "' + form.name.data + '" Cannot be created')
@@ -500,12 +505,13 @@ def create_artist_submission():
           db.session.close()
           if not error:
               flash('Artist "' + request.form['name'] + '" Added Successfully')
-              return render_template('pages/home.html', form=form)
+              return render_template('pages/home.html', errors=form.errors)
           else:
               flash('ERROR: Artist "' + request.form['name'] + '" cannot be added')
+              return render_template('forms/new_artist.html', form=form)
 
   print(form.errors)
-  return render_template('forms/new_artist.html', form=form)
+  return render_template('forms/new_artist.html', errors=form.errors)
 
   # TODO: on unsuccessful db insert, flash an error instead.
 
@@ -558,7 +564,6 @@ def shows():
 
 @app.route('/shows/create')
 def create_shows():
-  # renders form. do not touch.
   form = ShowForm()
   return render_template('forms/new_show.html', form=form)
 
@@ -566,13 +571,32 @@ def create_shows():
 def create_show_submission():
   # called to create new shows in the db, upon submitting new show listing form
   # TODO: insert form data as a new Show record in the db, instead
+  error=False
+  form = ShowForm(request.form)
+  if form.validate():
+      try:
+          show = Show(
+            venue_id = form.venue_id.data,
+            artist_id = form.artist_id.data,
+            start_time = form.start_time.data
+          )
+          db.session.add(show)
+          db.session.commit()
+      except:
+          db.session.rollback()
+          error=True
+      finally:
+          db.session.close()
+          if not error:
+              flash('Show was successfully created')
+              return render_template('pages/home.html', errors=form.errors)
+          else:
+              flash('There is an Error creating show')
+              return render_template('forms/new_show.html', form=form)
 
-  # on successful db insert, flash success
-  flash('Show was successfully listed!')
-  # TODO: on unsuccessful db insert, flash an error instead.
-  # e.g., flash('An error occurred. Show could not be listed.')
-  # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
-  return render_template('pages/home.html')
+  return render_template('forms/new_show.html', errors=form.errors)
+  # TODO: on unsuccessful db insert, flash an error instead. (Completed)
+
 
 @app.errorhandler(404)
 def not_found_error(error):
