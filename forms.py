@@ -1,9 +1,9 @@
 from datetime import datetime
-from flask_wtf import Form
+from flask_wtf import FlaskForm
 from wtforms import StringField, SelectField, SelectMultipleField, DateTimeField
-from wtforms.validators import DataRequired, AnyOf, URL
+from wtforms.validators import DataRequired, AnyOf, URL, Length
 
-class ShowForm(Form):
+class ShowForm(FlaskForm):
     artist_id = StringField(
         'artist_id'
     )
@@ -16,15 +16,18 @@ class ShowForm(Form):
         default= datetime.today()
     )
 
-class VenueForm(Form):
+class VenueForm(FlaskForm):
     name = StringField(
-        'name', validators=[DataRequired()]
+        'name',
+        validators=[DataRequired(message='This field is required')]
     )
     city = StringField(
-        'city', validators=[DataRequired()]
+        'city',
+        validators=[DataRequired(message='This field is required'), Length(max=120)]
     )
     state = SelectField(
-        'state', validators=[DataRequired()],
+        'state',
+        validators=[DataRequired(message='This field is required')],
         choices=[
             ('AL', 'AL'),
             ('AK', 'AK'),
@@ -80,17 +83,20 @@ class VenueForm(Form):
         ]
     )
     address = StringField(
-        'address', validators=[DataRequired()]
+        'address',
+        validators=[DataRequired(message='This field is required'), Length(min=2, max=120, message='The maximum length is 120')]
     )
     phone = StringField(
-        'phone'
+        'phone',
+        validators=[DataRequired(message='This field is required'), Length(min=2, max=120, message='The maximum length is 120')]
     )
-    image_link = StringField(
-        'image_link'
-    )
+    # image_link = StringField(
+    #     'image_link'
+    # )
     genres = SelectMultipleField(
         # TODO implement enum restriction
-        'genres', validators=[DataRequired()],
+        'genres',
+        validators=[DataRequired(message='This field is required')],
         choices=[
             ('Alternative', 'Alternative'),
             ('Blues', 'Blues'),
@@ -114,10 +120,11 @@ class VenueForm(Form):
         ]
     )
     facebook_link = StringField(
-        'facebook_link', validators=[URL()]
+        'facebook_link',
+        validators=[URL(message='Invalid Url')]
     )
 
-class ArtistForm(Form):
+class ArtistForm(FlaskForm):
     name = StringField(
         'name', validators=[DataRequired()]
     )
