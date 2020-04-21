@@ -1,6 +1,7 @@
 from datetime import datetime
 from flask_wtf import FlaskForm
-from wtforms import StringField, SelectField, SelectMultipleField, DateTimeField, IntegerField
+from flask_wtf.file import FileField, FileRequired
+from wtforms import RadioField, StringField, SelectField, SelectMultipleField, DateTimeField, IntegerField
 from wtforms.validators import InputRequired, DataRequired, AnyOf, URL, Length, NumberRange
 
 class ShowForm(FlaskForm):
@@ -96,9 +97,20 @@ class VenueForm(FlaskForm):
         'phone',
         validators=[DataRequired(message='This field is required'), Length(min=2, max=120, message='The maximum length is 120')]
     )
-    # image_link = StringField(
-    #     'image_link'
-    # )
+    seeking_talent = RadioField(
+        'seeking_talent',
+        choices = [(1, 'Yes'), (0, 'No')],
+        coerce=int,
+        default=0
+    )
+    seeking_description = StringField(
+        'seeking_description',
+        validators=[Length(max=120, message='The maximum is 120')]
+    )
+    image_link = FileField(
+        'image_link',
+        validators = [FileRequired(message='This field is required')]
+    )
     genres = SelectMultipleField(
         # TODO implement enum restriction
         'genres',
@@ -127,6 +139,10 @@ class VenueForm(FlaskForm):
     )
     facebook_link = StringField(
         'facebook_link',
+        validators=[URL(message='Invalid Url')]
+    )
+    website = StringField(
+        'website',
         validators=[URL(message='Invalid Url')]
     )
 
@@ -197,8 +213,19 @@ class ArtistForm(FlaskForm):
         # TODO implement validation logic for state
         'phone'
     )
-    image_link = StringField(
-        'image_link'
+    seeking_venue = RadioField(
+        'seeking_venue',
+        choices = [(1, 'Yes'), (0, 'No')],
+        coerce=int,
+        default=0
+    )
+    seeking_description = StringField(
+        'seeking_description',
+        validators=[Length(max=120, message='The maximum is 120')]
+    )
+    image_link = FileField(
+        'image_link',
+        validators = [FileRequired(message='This field is required')]
     )
     genres = SelectMultipleField(
         # TODO implement enum restriction
@@ -228,6 +255,10 @@ class ArtistForm(FlaskForm):
     facebook_link = StringField(
         # TODO implement enum restriction
         'facebook_link', validators=[URL()]
+    )
+    website = StringField(
+        'website',
+        validators=[URL(message='Invalid Url')]
     )
 
 # TODO IMPLEMENT NEW ARTIST FORM AND NEW SHOW FORM (completed)
