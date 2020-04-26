@@ -35,7 +35,7 @@
           {{ form.facebook_link(value = artist.facebook_link, class_ = 'form-control', placeholder='http://', id=form.state, autofocus = true) }}
       </div>
       <div class="form-group">
-          <label for="website">Website</label>
+          <label for="website">Website *</label>
           {{ form.website(value = artist.website, class_ = 'form-control', placeholder='http://', id=form.state, autofocus = true) }}
       </div>
       <div class="form-group">
@@ -45,6 +45,10 @@
       <div class="form-group">
         <label for="seeking_description">Seeking Description</label>
         {{ form.seeking_description(value = artist.seeking_description, class_ = 'form-control', autofocus = true) }}
+      </div>
+      <div class="form-group">
+        <label for="available_time">Available Time (Ex. 2020-04-26 21:58:00, 2020-...)</label>
+        {{ form.available_time(value = artist.available_time, class_ = 'form-control', autofocus = true) }}
       </div>
       <div class="form-group">
         <label for="artist_image_link">Artist Image *</label>

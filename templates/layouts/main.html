@@ -78,6 +78,32 @@
               </form>
               {% endif %}
             </li>
+            <li>
+              {% if (request.endpoint == 'venues') or
+                (request.endpoint == 'search_venues') or
+                (request.endpoint == 'show_venue') %}
+              <form class="search" method="post" action="/venues/search_by_city">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input class="form-control"
+                  type="search"
+                  name="search_term"
+                  placeholder="San Francisco, CA"
+                  aria-label="Search">
+              </form>
+              {% endif %}
+              {% if (request.endpoint == 'artists') or
+                (request.endpoint == 'search_artists') or
+                (request.endpoint == 'show_artist') %}
+                <form class="search" method="post" action="/artists/search_by_city">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                  <input class="form-control"
+                    type="search"
+                    name="search_term"
+                    placeholder="San Francisco, CA"
+                    aria-label="Search">
+                </form>
+              {% endif %}
+            </li>
           </ul>
           <ul class="nav navbar-nav">
             <li {% if request.endpoint == 'venues' %} class="active" {% endif %}><a href="{{ url_for('venues') }}">Venues</a></li>

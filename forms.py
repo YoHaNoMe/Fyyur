@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileRequired
 from wtforms import RadioField, StringField, SelectField, SelectMultipleField, DateTimeField, IntegerField
@@ -19,7 +19,7 @@ class ShowForm(FlaskForm):
     )
     start_time = DateTimeField(
         'start_time',
-        validators=[DataRequired('This field is required')],
+        validators=[InputRequired('This field is required')],
         default= datetime.today()
     )
 
@@ -254,33 +254,6 @@ class ArtistForm(FlaskForm):
         ],
         # default = ['Folk', 'Alternative']
     )
-    def get_genres():
-        return SelectMultipleField(
-            # TODO implement enum restriction
-            'genres', validators=[DataRequired()],
-            choices=[
-                ('Alternative', 'Alternative'),
-                ('Blues', 'Blues'),
-                ('Classical', 'Classical'),
-                ('Country', 'Country'),
-                ('Electronic', 'Electronic'),
-                ('Folk', 'Folk'),
-                ('Funk', 'Funk'),
-                ('Hip-Hop', 'Hip-Hop'),
-                ('Heavy Metal', 'Heavy Metal'),
-                ('Instrumental', 'Instrumental'),
-                ('Jazz', 'Jazz'),
-                ('Musical Theatre', 'Musical Theatre'),
-                ('Pop', 'Pop'),
-                ('Punk', 'Punk'),
-                ('R&B', 'R&B'),
-                ('Reggae', 'Reggae'),
-                ('Rock n Roll', 'Rock n Roll'),
-                ('Soul', 'Soul'),
-                ('Other', 'Other'),
-            ],
-            default=['Folk']
-        )
 
     facebook_link = StringField(
         # TODO implement enum restriction
@@ -289,6 +262,9 @@ class ArtistForm(FlaskForm):
     website = StringField(
         'website',
         validators=[URL(message='Invalid Url')]
+    )
+    available_time = StringField(
+        'available_time',
     )
 
 # TODO IMPLEMENT NEW ARTIST FORM AND NEW SHOW FORM (completed)
