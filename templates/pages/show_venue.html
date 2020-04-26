@@ -6,7 +6,7 @@
 		<h1 class="monospace">
 			{{ venue.name }}
 		</h1>
-		<p class="subtitle">
+		<p id="{{venue.id}}" class="subtitle">
 			ID: {{ venue.id }}
 		</p>
 		<div class="genres">
@@ -29,6 +29,9 @@
 		<p>
 			<i class="fab fa-facebook-f"></i> {% if venue.facebook_link %}<a href="{{ venue.facebook_link }}" target="_blank">{{ venue.facebook_link }}</a>{% else %}No Facebook Link{% endif %}
 		</p>
+		<div>
+		<a href="/venues/{{venue.id}}/edit"><button class="btn btn-primary btn-lg">Edit</button></a>
+		</div>
 		{% if venue.seeking_talent %}
 		<div class="seeking">
 			<p class="lead">Currently seeking talent</p>
@@ -75,5 +78,22 @@
 		{% endfor %}
 	</div>
 </section>
+<!-- <form method="delete" class="form" action="/venues/{{venue.id}}"> -->
+	<!-- <button id="delete-venue" type="submit" class="btn btn-danger btn-lg">Delete</button> -->
+<!-- </form> -->
+<!-- <script>
+	const venueId = document.getElementsByClassName('subtitle')[0].id;
+	const delBtn = document.getElementById('delete-venue').onclick = function(e){
+	console.log('Clicked me: ' + venueId);
+	fetch('/venues/' + venueId, {
+		method: 'DELETE',
+	}).then(function(res){
+		console.log('done')
+		console.log(res)
+	}).catch(function(e){
+		console.log(e)
+	})
+}
 
+</script> -->
 {% endblock %}
