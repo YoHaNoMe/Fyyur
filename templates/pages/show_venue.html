@@ -78,6 +78,12 @@
 		{% endfor %}
 	</div>
 </section>
+<div class="form-wrapper">
+<form action="{{ url_for('delete_venue', venue_id=venue.id) }}" method="POST" class="form">
+	<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+	<input type="submit" value="Delete" class="btn btn-danger btn-lg"/>
+</form>
+</div>
 <!-- <form method="delete" class="form" action="/venues/{{venue.id}}"> -->
 	<!-- <button id="delete-venue" type="submit" class="btn btn-danger btn-lg">Delete</button> -->
 <!-- </form> -->

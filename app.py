@@ -40,8 +40,6 @@ class Venue(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
-    # city = db.Column(db.String(120))
-    # state = db.Column(db.String(120))
     address = db.Column(db.String(120))
     phone = db.Column(db.String(120))
     image_link = db.Column(db.String(500))
@@ -49,7 +47,7 @@ class Venue(db.Model):
     website = db.Column(db.String(120))
     seeking_talent = db.Column(db.Boolean, default=False)
     seeking_description = db.Column(db.String(120))
-    shows = db.relationship('Show', backref='venue', lazy=True)
+    shows = db.relationship('Show', backref='venue', lazy=True, cascade='all, delete-orphan')
     genres = db.Column(db.String)
     city_state_id = db.Column(db.Integer, db.ForeignKey('CityState.id', ondelete='CASCADE'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.today())
@@ -112,8 +110,8 @@ app.jinja_env.filters['datetime'] = format_datetime
 
 @app.route('/')
 def index():
-  artists = Artist.query.filter(Artist.created_at >= datetime.today() - timedelta(days=7)).limit(10)
-  venues = Venue.query.filter(Venue.created_at >= datetime.today() - timedelta(days=7)).limit(10)
+  artists = Artist.query.order_by(db.desc(Artist.created_at)).limit(10)
+  venues = Venue.query.order_by(db.desc(Venue.created_at)).limit(10)
   return render_template('pages/home.html', artists=artists, venues=venues)
 
 
@@ -124,17 +122,19 @@ def index():
 def venues():
   # TODO: replace with real venues data. (Completed)
   city_state = CityState.query.all()
+
   data = []
   for c in city_state:
-      ven_list = [{
-        "id": venue.id,
-        "name": venue.name
-      } for venue in c.venues]
-      data.append({
-        "city": c.city.title(),
-        "state": c.state.upper(),
-        "venues": ven_list
-      })
+      if c.venues:
+          ven_list = [{
+            "id": venue.id,
+            "name": venue.name
+          } for venue in c.venues]
+          data.append({
+            "city": c.city.title(),
+            "state": c.state.upper(),
+            "venues": ven_list
+          })
 
   return render_template('pages/venues.html', areas=data);
 
@@ -252,6 +252,35 @@ def create_venue_form():
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def create_setup(request, form): # return Tuple(file, genres_list, cityState obj)
+    error=False
+    genres_list = ''
+    filepath = ''
+    city_state = None
+    try:
+        # Get image_link
+        file = request.files['image_link']
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(filepath)
+            for g in form.genres.data:
+                genres_list += '{},'.format(g)
+            # Check if City and State Already exists
+            city = form.city.data.strip().title()
+            state = form.state.data
+            city_state = CityState.query.filter_by(state=state).first()
+            if not city_state:
+                city_state = CityState(
+                  city=city,
+                  state=state
+                )
+    except:
+        error=True
+        form.errors['image_link'] = ['Invalid image extension']
+    finally:
+        return (filepath, genres_list, city_state) if not error else None
+
 @app.route('/venues/create', methods=['POST'])
 def create_venue_submission():
   # TODO: insert form data as a new Venue record in the db, instead (Completed)
@@ -263,43 +292,25 @@ def create_venue_submission():
   if form.validate():
       try:
           # Get image_link
-          file = request.files['image_link']
-          if file and allowed_file(file.filename):
-              filename = secure_filename(file.filename)
-              filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-              file.save(filepath)
-              for g in form.genres.data:
-                  genres_list += '{},'.format(g)
-              # Check if City and State Already exists
-              city = form.city.data.strip().title()
-              state = form.state.data
-              city_state = CityState.query.filter_by(state=state).first()
-              if not city_state:
-                  city_state = CityState(
-                    city=city,
-                    state=state
-                  )
-              venue = Venue(
-                name=form.name.data.strip(),
-                address=form.address.data.strip(),
-                phone=form.phone.data.strip(),
-                genres=genres_list,
-                image_link=filepath,
-                seeking_talent=form.seeking_talent.data,
-                seeking_description=form.seeking_description.data.strip(),
-                website=form.website.data.strip(),
-                facebook_link=form.facebook_link.data.strip())
-              city_state.venues.append(venue)
-              db.session.add(venue)
-              db.session.commit()
-              print('File found: {}'.format(file.filename))
-          else:
-              error=True
-              form.errors['image_link'] = ['Invalid image extension']
+          filepath, genres_list, city_state = create_setup(request, form)
+          venue = Venue(
+            name=form.name.data.strip(),
+            address=form.address.data.strip(),
+            phone=form.phone.data.strip(),
+            genres=genres_list,
+            image_link=filepath,
+            seeking_talent=form.seeking_talent.data,
+            seeking_description=form.seeking_description.data.strip(),
+            website=form.website.data.strip(),
+            facebook_link=form.facebook_link.data.strip())
+          city_state.venues.append(venue)
+          db.session.add(venue)
+          db.session.commit()
+          print('File : {}'.format(filepath))
       except Exception as e:
+          db.session.rollback()
           error = True
           print(e)
-          db.session.rollback()
       finally:
           db.session.close()
       if not error:
@@ -314,24 +325,27 @@ def create_venue_submission():
   return render_template('forms/new_venue.html', form=form, errors=form.errors)
 
 
-@app.route('/venues/<venue_id>', methods=['DELETE'])
+@app.route('/venues/<venue_id>', methods=['POST'])
 def delete_venue(venue_id):
   # TODO: Complete this endpoint for taking a venue_id, and using (Compeleted)
-  # SQLAlchemy ORM to delete a record. Handle cases where the session commit could fail.
   error=False
   try:
       venue = Venue.query.get(venue_id)
       db.session.delete(venue)
       db.session.commit()
-  except:
+  except Exception as e:
       error=True
       db.session.rollback()
+      print(e)
   finally:
       db.session.close()
       if not error:
+          flash('Venue ID: "' + venue_id + '" Deleted successfully')
           print('Venue with ID: {} | Deleted successfully'.format(venue_id))
       else:
+          flash('ERROR: Venue ID: "' + venue_id + '" Cannot be deleted')
           print('ERROR: Venue with ID: {} | Colud not be deleted'.format(venue_id))
+          return render_template('pages/show_venue.html', venue=venue)
 
   # BONUS CHALLENGE: Implement a button to delete a Venue on a Venue Page, have it so that
   # clicking that button delete it from the db then redirect the user to the homepage
@@ -362,7 +376,6 @@ def search_artists():
         "num_upcoming_shows": filter(lambda show: show.start_time >= datetime.today(), artist.shows)
     } for artist in artists]
   }
-  print(response2['data'])
   return render_template('pages/search_artists.html', results=response, search_term=search_term)
 
 @app.route('/artists/search_by_city', methods=['POST'])
@@ -413,7 +426,6 @@ def show_artist(artist_id):
     "upcoming_shows_count": len(upcoming_shows),
   }
   print(data)
-  # data = list(filter(lambda d: d['id'] == artist_id, [data1, data2, data3]))[0]
   return render_template('pages/show_artist.html', artist=data)
 
 #  Update
@@ -442,7 +454,6 @@ def edit_artist(artist_id):
 @app.route('/artists/<int:artist_id>/edit', methods=['POST'])
 def edit_artist_submission(artist_id):
   # TODO: take values from the form submitted, and update existing (Completed)
-  # artist record with ID <artist_id> using the new attributes
   form = ArtistForm()
   error=False
   is_new_city_state = False
@@ -460,13 +471,11 @@ def edit_artist_submission(artist_id):
           city_state_old = CityState.query.get(artist.city_state_id)
           city_state_new = CityState.query.filter_by(state=form.state.data).first()
           if not city_state_new:
-              print('He didnt find it, it is new')
               city_state_new = CityState(city=form.city.data.strip(), state=form.data.state)
               db.session.add(city_state_new)
               city_state_new.artists.append(artist)
           else:
               if city_state_old.state != city_state_new.state:
-                  print('I am here***********')
                   is_new_city_state=True
 
           for g in form.genres.data:
@@ -482,7 +491,6 @@ def edit_artist_submission(artist_id):
           artist.image_link = filepath
           if is_new_city_state:
               db.session.add(artist)
-              print('gsdfsdfsdfsdfsdfsfsdf')
               city_state_new.artists.append(artist)
               # city_state_old.artists.remove(artist)
 
@@ -553,7 +561,6 @@ def edit_venue(venue_id):
 def edit_venue_submission(venue_id):
   # TODO: take values from the form submitted, and update existing (Completed)
   form = VenueForm()
-  print('asdkaskdaskdksakdkasdksadsasd')
   error=False
   is_new_city_state = False
   venue = {}
@@ -570,13 +577,11 @@ def edit_venue_submission(venue_id):
           city_state_old = CityState.query.get(venue.city_state_id)
           city_state_new = CityState.query.filter_by(state=form.state.data).first()
           if not city_state_new:
-              print('He didnt find it, it is new')
               city_state_new = CityState(city=form.city.data.strip(), state=form.state.data)
               db.session.add(city_state_new)
               city_state_new.venues.append(venue)
           else:
               if city_state_old.state != city_state_new.state:
-                  print('I am here***********')
                   is_new_city_state=True
 
           for g in form.genres.data:
@@ -592,7 +597,6 @@ def edit_venue_submission(venue_id):
           venue.image_link = filepath
           if is_new_city_state:
               db.session.add(venue)
-              print('gsdfsdfsdfsdfsdfsfsdf')
               city_state_new.venues.append(venue)
 
           db.session.commit()
@@ -655,34 +659,19 @@ def create_artist_submission():
   genres_list = ''
   if form.validate():
       try:
-          file = request.files['image_link']
-          if file and allowed_file(file.filename):
-              filename = secure_filename(file.filename)
-              filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-              file.save(filepath)
-              for g in form.genres.data:
-                  genres_list += '{},'.format(g)
-              city_state = CityState.query.filter_by(state=form.state.data).first()
-              if not city_state:
-                  city_state = CityState(
-                    city=form.city.data.strip().title(),
-                    state=form.state.data
-                  )
-              artist = Artist(
-                name = form.name.data.strip(),
-                phone = form.phone.data.strip(),
-                genres = genres_list,
-                image_link = filepath,
-                seeking_venue = form.seeking_venue.data,
-                seeking_description = form.seeking_description.data.strip(),
-                website = form.website.data.strip(),
-                facebook_link = form.facebook_link.data.strip())
-              city_state.artists.append(artist)
-              db.session.add(artist)
-              db.session.commit()
-          else:
-              error=True
-              form.errors['image_link'] = ['Invalid image extension']
+          filepath, genres_list, city_state = create_setup(request, form)
+          artist = Artist(
+            name = form.name.data.strip(),
+            phone = form.phone.data.strip(),
+            genres = genres_list,
+            image_link = filepath,
+            seeking_venue = form.seeking_venue.data,
+            seeking_description = form.seeking_description.data.strip(),
+            website = form.website.data.strip(),
+            facebook_link = form.facebook_link.data.strip())
+          city_state.artists.append(artist)
+          db.session.add(artist)
+          db.session.commit()
       except Exception as e:
           print(e)
           error=True
@@ -744,7 +733,6 @@ def create_show_submission():
           venue_id = form.venue_id.data
           artist_id = form.artist_id.data
           start_time = form.start_time.data
-          print(start_time.strftime('%Y-%m-%d %H:%M:%S'))
           if start_time.strftime('%Y-%m-%d %H:%M:%S') not in get_available_time(artist.available_time):
               show = Show(
                 venue_id = venue_id,
